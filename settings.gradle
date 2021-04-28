@@ -1,0 +1,3 @@
+include ':LiteGridDragDrop'
+include ':app'
+rootProject.name = "LiteGridDragDropDemo"
