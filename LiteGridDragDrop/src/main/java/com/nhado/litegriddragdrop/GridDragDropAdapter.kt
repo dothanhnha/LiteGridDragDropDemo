@@ -6,8 +6,11 @@ import android.view.ViewGroup
 
 abstract class GridDragDropAdapter<T : BaseViewHolder?> {
 
-    abstract fun onCreateViewHolder(parent: ViewGroup, viewType: Int): T
-    abstract fun getItemCount(): Int
+    var draggingPosition : Int? = null
 
+    abstract fun onCreateViewHolder(parent: ViewGroup): T
+    abstract fun getItemCount(): Int
     abstract fun onBindViewHolder(holder: T, position: Int)
+    abstract fun onBindViewHolderForDragMode(holder: T, position: Int)
+    abstract fun getItemViewType(position: Int): ViewType
 }
