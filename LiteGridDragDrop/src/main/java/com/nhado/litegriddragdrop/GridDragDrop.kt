@@ -14,6 +14,7 @@ import androidx.core.view.get
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import com.example.drapdropcustom.MDragShadow
+import java.util.*
 import kotlin.collections.ArrayList
 
 
@@ -23,9 +24,8 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
 
     fun registerAdapter(value: GridDragDropAdapter<*>) {
         adapter = value as GridDragDropAdapter<BaseViewHolder>
+        value.grid = this
     }
-
-    var listView: ArrayList<BaseViewHolder> = ArrayList()
 
     fun bindView() {
         (this@GridDragDrop as ViewGroup).removeAllViews()
@@ -45,7 +45,7 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
             }
             view.itemView.setOnDragListener(genDragListener())
             view.itemView.setOnLongClickListener(this)
-            listView.add(view)
+            adapter.listView.add(view)
             this@GridDragDrop.addView(viewWithWrapper)
         }
     }
@@ -81,12 +81,16 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
                         return event.clipDescription.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)
                     }
                     DragEvent.ACTION_DRAG_ENTERED -> {
+                        var pairWrapper = getPairWrapper(event, view)
+                        adapter.listView[pairWrapper.effectedWrapper.position].onBindMode(BaseViewHolder.ModeBindView.ENTERED)
                         return true
                     }
                     DragEvent.ACTION_DRAG_LOCATION -> {
                         return true
                     }
                     DragEvent.ACTION_DRAG_EXITED -> {
+                        var pairWrapper = getPairWrapper(event, view)
+                        adapter.listView[pairWrapper.effectedWrapper.position].onBindMode(BaseViewHolder.ModeBindView.EXITED)
                         return true
                     }
                     DragEvent.ACTION_DROP -> {
@@ -94,14 +98,12 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
                         return true
                     }
                     DragEvent.ACTION_DRAG_ENDED -> {
-                        val position = getPositionFromItemView(event.localState as View)
-                        listView[position!!].itemView.isVisible = true
-                        if (position != null)
-                            adapter.onBindViewHolderForDragMode(listView[position!!], position)
+                        var pairWrapper = getPairWrapper(event, view)
+                        adapter.listView[pairWrapper.dragWrapper.position].itemView.isVisible = true
                         return true
                     }
                     else -> Log.e(
-                            "DragDrop Example",
+                            "LiteGridDragDropDemo",
                             "Unknown action type received by OnDragListener."
                     )
                 }
@@ -112,9 +114,8 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
     }
 
     override fun onLongClick(view: View?): Boolean {
-
-        listView.forEachIndexed { index, view ->
-            adapter.onBindViewHolderForDragMode(view, index)
+        adapter.listView.forEach {
+            it.onBindMode(BaseViewHolder.ModeBindView.DRAG)
         }
         view?.isInvisible = true
         val item = ClipData.Item((view?.tag).toString() as CharSequence)
@@ -141,22 +142,25 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
         return true
     }
 
-    fun swapView(event: DragEvent, view: View){
+    fun getPairWrapper(event: DragEvent, view: View): PairWrapper{
         val fromView = event.localState as View
         val fromWrapper = fromView.parent as Wrapper
         val toWrapper =
-                view.parent as Wrapper //caste the view into LinearLayout as our drag acceptable layout is LinearLayout
-        val toView = toWrapper.get(0)
-
-        val fromPosition = fromWrapper.position
-        fromWrapper.position = toWrapper.position
-        toWrapper.position = fromPosition
-
-        fromWrapper.removeAllViews()
-        toWrapper.removeAllViews()
-        fromWrapper.addView(toView)
-        fromView.isVisible = true
-        toWrapper.addView(fromView)
+            view.parent as Wrapper
+        return PairWrapper(fromWrapper, toWrapper)
     }
+
+    fun swapView(event: DragEvent, view: View){
+        var pairWrapper = getPairWrapper(event, view)
+
+        adapter.onSwapDataset(pairWrapper.dragWrapper.position, pairWrapper.effectedWrapper.position)
+
+        adapter.onBindViewHolder(adapter.listView[pairWrapper.dragWrapper.position], pairWrapper.dragWrapper.position)
+        adapter.onBindViewHolder(adapter.listView[pairWrapper.effectedWrapper.position], pairWrapper.effectedWrapper.position)
+    }
+
+
+    class PairWrapper(var dragWrapper: Wrapper, var effectedWrapper: Wrapper)
+
 
 }

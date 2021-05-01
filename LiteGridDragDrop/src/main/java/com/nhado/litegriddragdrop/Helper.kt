@@ -12,7 +12,4 @@ fun View.dpToPx(value : Float) : Int{
 }
 
 class Helper {
-
-
-
 }

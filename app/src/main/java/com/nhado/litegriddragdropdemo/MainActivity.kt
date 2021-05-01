@@ -4,15 +4,20 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.GridLayout
+import androidx.core.view.isInvisible
+import androidx.core.view.isVisible
 import com.nhado.litegriddragdrop.BaseViewHolder
 import com.nhado.litegriddragdrop.GridDragDropAdapter
 import com.nhado.litegriddragdrop.ViewType
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.view_holder.view.*
+import java.util.*
+import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,11 +34,17 @@ class MainActivity : AppCompatActivity() {
                 return MyViewHolder(view)
             }
 
+            override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
+                holder.onBindData(dataset[position]){
+                    dataset.removeAt(position)
+                    notifiDatasetChange(null)
+                }
+            }
+
+
             override fun getItemCount(): Int = dataset.size
 
-            override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-                holder.bindView(position.toString())
-            }
+
 
             override fun getItemViewType(position: Int): ViewType {
                 if(position == 0 || position == 3){
@@ -46,10 +57,10 @@ class MainActivity : AppCompatActivity() {
                     return ViewType()
             }
 
-            override fun onBindViewHolderForDragMode(holder: MyViewHolder, position: Int) {
-                holder.bindViewForDrag()
+            override fun onSwapDataset(fromPosition: Int, toPosition: Int) {
+                Collections.swap(dataset, fromPosition, toPosition)
+                Log.d("dataset",dataset.toString())
             }
-
         }
         gridDragDrop.registerAdapter(adapter)
         gridDragDrop.bindView()
@@ -57,11 +68,13 @@ class MainActivity : AppCompatActivity() {
 }
 
 class MyViewHolder(itemView: View) : BaseViewHolder(itemView) {
-    fun bindView(s: String) {
-        itemView.textView.text = s
+    override fun onBindMode(mode: ModeBindView) {
     }
 
-    fun bindViewForDrag() {
+    fun onBindData(data: String, onDeleteClicked : ()->Unit) {
+        itemView.textView.text = data
+        itemView.ic_delete.setOnClickListener {
+            onDeleteClicked.invoke()
+        }
     }
-
 }
