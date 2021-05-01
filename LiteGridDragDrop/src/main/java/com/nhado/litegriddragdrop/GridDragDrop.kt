@@ -22,13 +22,19 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
 
     lateinit var adapter: GridDragDropAdapter<BaseViewHolder>
 
+    var listView: ArrayList<BaseViewHolder> = ArrayList()
+
+
     fun registerAdapter(value: GridDragDropAdapter<*>) {
         adapter = value as GridDragDropAdapter<BaseViewHolder>
-        value.grid = this
+        adapter.callBackGridDatasetChange = {
+            bindView()
+        }
     }
 
     fun bindView() {
         (this@GridDragDrop as ViewGroup).removeAllViews()
+        listView.clear()
         for (i in 0 until adapter.getItemCount()) {
             var view = adapter.onCreateViewHolder(this@GridDragDrop)
             adapter.onBindViewHolder(view, i)
@@ -45,7 +51,7 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
             }
             view.itemView.setOnDragListener(genDragListener())
             view.itemView.setOnLongClickListener(this)
-            adapter.listView.add(view)
+            listView.add(view)
             this@GridDragDrop.addView(viewWithWrapper)
         }
     }
@@ -78,19 +84,25 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
                 val action = event.action
                 when (action) {
                     DragEvent.ACTION_DRAG_STARTED -> {
+                        var pairWrapper = getPairWrapper(event, view)
+                        Log.d("dragStarted", pairWrapper.dragWrapper.position.toString() + "_" + pairWrapper.effectedWrapper.position)
                         return event.clipDescription.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)
                     }
                     DragEvent.ACTION_DRAG_ENTERED -> {
                         var pairWrapper = getPairWrapper(event, view)
-                        adapter.listView[pairWrapper.effectedWrapper.position].onBindMode(BaseViewHolder.ModeBindView.ENTERED)
+                        Log.d("dragEntered", pairWrapper.dragWrapper.position.toString() + "_" + pairWrapper.effectedWrapper.position)
+                        listView[pairWrapper.effectedWrapper.position].onBindMode(BaseViewHolder.ModeBindView.ENTERED)
                         return true
                     }
                     DragEvent.ACTION_DRAG_LOCATION -> {
+                        var pairWrapper = getPairWrapper(event, view)
+                        Log.d("dragLocation", pairWrapper.dragWrapper.position.toString() + "_" + pairWrapper.effectedWrapper.position)
                         return true
                     }
                     DragEvent.ACTION_DRAG_EXITED -> {
                         var pairWrapper = getPairWrapper(event, view)
-                        adapter.listView[pairWrapper.effectedWrapper.position].onBindMode(BaseViewHolder.ModeBindView.EXITED)
+                        Log.d("dragExited", pairWrapper.dragWrapper.position.toString() + "_" + pairWrapper.effectedWrapper.position)
+                        listView[pairWrapper.effectedWrapper.position].onBindMode(BaseViewHolder.ModeBindView.EXITED)
                         return true
                     }
                     DragEvent.ACTION_DROP -> {
@@ -99,7 +111,8 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
                     }
                     DragEvent.ACTION_DRAG_ENDED -> {
                         var pairWrapper = getPairWrapper(event, view)
-                        adapter.listView[pairWrapper.dragWrapper.position].itemView.isVisible = true
+                        Log.d("dragEnded", pairWrapper.dragWrapper.position.toString() + "_" + pairWrapper.effectedWrapper.position)
+                        listView[pairWrapper.dragWrapper.position].itemView.isVisible = true
                         return true
                     }
                     else -> Log.e(
@@ -114,7 +127,15 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
     }
 
     override fun onLongClick(view: View?): Boolean {
-        adapter.listView.forEach {
+        if (view == null || listView.size == 1) {
+            /// if only have one view left
+            // => drag will not work
+            // => message : "Drag is in progress, but there is no drag window handle."
+            // => wrong
+            return true
+        }
+
+        listView.forEach {
             it.onBindMode(BaseViewHolder.ModeBindView.DRAG)
         }
         view?.isInvisible = true
@@ -122,8 +143,6 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
         val mimeTypes = arrayOf(ClipDescription.MIMETYPE_TEXT_PLAIN)
         val data = ClipData(view?.tag.toString(), mimeTypes, item)
 
-        if (view == null)
-            return true
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             view?.startDragAndDrop(
                     data
@@ -155,12 +174,25 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
 
         adapter.onSwapDataset(pairWrapper.dragWrapper.position, pairWrapper.effectedWrapper.position)
 
-        adapter.onBindViewHolder(adapter.listView[pairWrapper.dragWrapper.position], pairWrapper.dragWrapper.position)
-        adapter.onBindViewHolder(adapter.listView[pairWrapper.effectedWrapper.position], pairWrapper.effectedWrapper.position)
+        adapter.onBindViewHolder(listView[pairWrapper.dragWrapper.position], pairWrapper.dragWrapper.position)
+        adapter.onBindViewHolder(listView[pairWrapper.effectedWrapper.position], pairWrapper.effectedWrapper.position)
     }
 
 
     class PairWrapper(var dragWrapper: Wrapper, var effectedWrapper: Wrapper)
+
+    abstract class GridDragDropAdapter<T : BaseViewHolder> {
+        internal var callBackGridDatasetChange : (() -> Unit)? = null
+
+        abstract fun onBindViewHolder(holder: T, position: Int)
+        abstract fun onCreateViewHolder(parent: ViewGroup): T
+        abstract fun getItemCount(): Int
+        abstract fun getItemViewType(position: Int): ViewType
+        fun notifiDatasetChange() {
+            callBackGridDatasetChange?.invoke()
+        }
+        abstract fun onSwapDataset(fromPosition: Int, toPosition: Int)
+    }
 
 
 }

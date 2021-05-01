@@ -12,7 +12,7 @@ import android.widget.GridLayout
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import com.nhado.litegriddragdrop.BaseViewHolder
-import com.nhado.litegriddragdrop.GridDragDropAdapter
+import com.nhado.litegriddragdrop.GridDragDrop
 import com.nhado.litegriddragdrop.ViewType
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.view_holder.view.*
@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        var adapter = object :GridDragDropAdapter<MyViewHolder>(){
+        var adapter = object : GridDragDrop.GridDragDropAdapter<MyViewHolder>(){
 
             var dataset = arrayListOf("item1", "item2", "item3", "item4", "item5", "item6")
 
@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
             override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
                 holder.onBindData(dataset[position]){
                     dataset.removeAt(position)
-                    notifiDatasetChange(null)
+                    notifiDatasetChange()
                 }
             }
 
