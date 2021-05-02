@@ -69,10 +69,22 @@ class MainActivity : AppCompatActivity() {
 
 class MyViewHolder(itemView: View) : BaseViewHolder(itemView) {
     override fun onBindMode(mode: ModeBindView) {
+        when(mode){
+            ModeBindView.DRAG ->{
+                itemView.ic_delete.isVisible = true
+            }
+            ModeBindView.ENTERED ->{
+                itemView.ic_delete.isInvisible = true
+            }
+            ModeBindView.EXITED ->{
+                itemView.ic_delete.isVisible = true
+            }
+        }
     }
 
     fun onBindData(data: String, onDeleteClicked : ()->Unit) {
         itemView.textView.text = data
+        itemView.ic_delete.isInvisible = true
         itemView.ic_delete.setOnClickListener {
             onDeleteClicked.invoke()
         }

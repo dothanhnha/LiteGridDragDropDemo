@@ -139,9 +139,9 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
             it.onBindMode(BaseViewHolder.ModeBindView.DRAG)
         }
         view?.isInvisible = true
-        val item = ClipData.Item((view?.tag).toString() as CharSequence)
+        val item = ClipData.Item((view.parent as View).tag.toString() as CharSequence)
         val mimeTypes = arrayOf(ClipDescription.MIMETYPE_TEXT_PLAIN)
-        val data = ClipData(view?.tag.toString(), mimeTypes, item)
+        val data = ClipData((view.parent as View).tag.toString(), mimeTypes, item)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             view?.startDragAndDrop(
@@ -175,7 +175,9 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
         adapter.onSwapDataset(pairWrapper.dragWrapper.position, pairWrapper.effectedWrapper.position)
 
         adapter.onBindViewHolder(listView[pairWrapper.dragWrapper.position], pairWrapper.dragWrapper.position)
+        listView[pairWrapper.dragWrapper.position].onBindMode(BaseViewHolder.ModeBindView.DRAG)
         adapter.onBindViewHolder(listView[pairWrapper.effectedWrapper.position], pairWrapper.effectedWrapper.position)
+        listView[pairWrapper.effectedWrapper.position].onBindMode(BaseViewHolder.ModeBindView.DRAG)
     }
 
 
