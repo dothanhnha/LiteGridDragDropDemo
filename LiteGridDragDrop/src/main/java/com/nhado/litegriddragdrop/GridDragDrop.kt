@@ -10,11 +10,9 @@ import android.view.DragEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.GridLayout
-import androidx.core.view.get
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
-import com.example.drapdropcustom.MDragShadow
-import java.util.*
+import com.example.drapdropcustom.BaseDragShadow
 import kotlin.collections.ArrayList
 
 
@@ -23,6 +21,13 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
     lateinit var adapter: GridDragDropAdapter<BaseViewHolder>
 
     var listView: ArrayList<BaseViewHolder> = ArrayList()
+
+    var dragShow: DragShadowBuilder? = null
+
+    var buildDragShadow: ((view: View) -> DragShadowBuilder)? = null
+
+    private fun genDragShadow(view: View): DragShadowBuilder =
+        buildDragShadow?.invoke(view) ?: BaseDragShadow(view)
 
 
     fun registerAdapter(value: GridDragDropAdapter<*>) {
@@ -54,13 +59,6 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
             listView.add(view)
             this@GridDragDrop.addView(viewWithWrapper)
         }
-    }
-
-    private fun getPositionFromItemView(view: View): Int? {
-        if (view.parent is Wrapper)
-            return (view.parent as Wrapper).position
-        else
-            return null
     }
 
     private fun genWrapper(viewType: ViewType, position: Int): Wrapper {
@@ -145,15 +143,15 @@ class GridDragDrop(context: Context?, attrs: AttributeSet?) : GridLayout(context
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             view?.startDragAndDrop(
-                    data
-                    , MDragShadow(view)
-                    , view
-                    , DRAG_FLAG_OPAQUE
+                data
+                , dragShow ?: genDragShadow(view)
+                , view
+                , DRAG_FLAG_OPAQUE
             )
         } else {
             view?.startDrag(
                     data
-                    , MDragShadow(view)
+                    , dragShow ?: genDragShadow(view)
                     , view
                     , DRAG_FLAG_OPAQUE
             )
